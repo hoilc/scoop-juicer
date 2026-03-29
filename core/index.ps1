@@ -88,9 +88,14 @@ foreach ($dir in $manifestDirs) {
     $compareMode = if ($State.Contains('compareMode')) { $State.compareMode } else { $null }
 
     $StateExcludeKeys = @('compareMode')
-    $saveData = @{}
-    foreach ($key in $State.Keys) {
-        if ($key -notin $StateExcludeKeys) { $saveData[$key] = $State[$key] }
+    $saveData = [ordered]@{}
+    if ($State.Contains('version')) {
+        $saveData['version'] = $State['version']
+    }
+    foreach ($key in ($State.Keys | Sort-Object)) {
+        if ($key -notin $StateExcludeKeys -and $key -ne 'version') {
+            $saveData[$key] = $State[$key]
+        }
     }
 
     $result = Compare-Version -OldVersion $oldVersion -NewVersion $newVersion -CompareMode $compareMode
