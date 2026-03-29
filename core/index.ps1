@@ -23,6 +23,7 @@ param(
 Set-StrictMode -Version 3.0
 
 . (Join-Path $PSScriptRoot 'utils.ps1')
+. (Join-Path $PSScriptRoot 'helpers.ps1')
 
 if (-not (Test-Path -Path $Path)) {
     throw "Manifest directory '${Path}' does not exist."
@@ -122,3 +123,5 @@ if ((Test-Path -Path Env:\CI) -and $hasChanges) {
 }
 
 Write-Log 'Done'
+
+Remove-TempBase

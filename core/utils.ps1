@@ -68,15 +68,23 @@ function Read-ProductVersionFromExe {
     return $versionInfo.ProductVersion
 }
 
+$global:JuicerTempBase = Join-Path ([System.IO.Path]::GetTempPath()) "scoop-juicer-$(Get-Random)"
+New-Item -Path $global:JuicerTempBase -ItemType Directory -Force | Out-Null
+
 function New-TempFile {
-    $tempPath = Join-Path ([System.IO.Path]::GetTempPath()) "scoop-juicer-$(Get-Random)"
-    return $tempPath
+    return Join-Path $global:JuicerTempBase "tmp-$(Get-Random)"
 }
 
 function New-TempFolder {
-    $tempPath = Join-Path ([System.IO.Path]::GetTempPath()) "scoop-juicer-$(Get-Random)"
+    $tempPath = Join-Path $global:JuicerTempBase "tmp-$(Get-Random)"
     New-Item -Path $tempPath -ItemType Directory -Force | Out-Null
     return $tempPath
+}
+
+function Remove-TempBase {
+    if (Test-Path $global:JuicerTempBase) {
+        Remove-Item -Path $global:JuicerTempBase -Recurse -Force
+    }
 }
 
 function Compare-Version {
@@ -181,6 +189,10 @@ function Expand-7zArchive {
     }
 
     & $7z @arguments 2>&1 | Out-File -FilePath $logFile -Encoding utf8
+    if ($LASTEXITCODE -ne 0) {
+        $log = Get-Content -Path $logFile -Raw
+        throw "7z extraction failed (exit code $LASTEXITCODE): $log"
+    }
 }
 
 function Get-7zArchiveList {
