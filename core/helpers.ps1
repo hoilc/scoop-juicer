@@ -39,30 +39,42 @@ function Extract-VersionFromRemoteFileExec {
     $output = (& $filePath $Argument 2>&1) -join "`n"
 
     if ($output -match $Regex) {
-        return $matches[1]
+        return $matches[1].Trim()
     } else {
         throw "Cannot find version matching '$Regex' in command output"
     }
 }
 
-function Extract-VersionFromRemoteFileVersion {
+function Extract-VersionInfoFromRemoteFile {
     param(
         [Parameter(Mandatory)][string]$Url,
-        [string]$ExtractFilePath
+        [string]$ExtractFilePath,
+        [ValidateSet("FileVersion", "ProductVersion")]
+        [string]$PreferVersionField = "FileVersion"
     )
 
     $filePath = Get-RemoteFile -Url $Url -ExtractFilePath $ExtractFilePath
+    $info = Read-VersionInfoFromExe -FilePath $filePath
 
-    return Read-FileVersionFromExe -FilePath $filePath
-}
+    $strippedInfo = @{ version = $null }
+    if ($info.FileVersion) {
+        $strippedInfo.fileVersion = $info.FileVersion.Trim()
+    }
+    if ($info.ProductVersion) {
+        $strippedInfo.productVersion = $info.ProductVersion.Trim()
+    }
 
-function Extract-VersionFromRemoteFileProductVersion {
-    param(
-        [Parameter(Mandatory)][string]$Url,
-        [string]$ExtractFilePath
-    )
+    $strippedInfo.version = if ($PreferVersionField -eq 'ProductVersion') {
+        if ($info.ProductVersion) { $info.ProductVersion } else { $info.FileVersion }
+    } else {
+        if ($info.FileVersion) { $info.FileVersion } else { $info.ProductVersion }
+    }
 
-    $filePath = Get-RemoteFile -Url $Url -ExtractFilePath $ExtractFilePath
+    if (-not $strippedInfo.version) {
+        throw "Cannot extract version from '$filePath'"
+    } else {
+        $strippedInfo.version = $strippedInfo.version.Trim()
+    }
 
-    return Read-ProductVersionFromExe -FilePath $filePath
+    return $strippedInfo
 }

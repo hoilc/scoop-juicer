@@ -56,16 +56,10 @@ function Get-RedirectedUrl {
     }
 }
 
-function Read-FileVersionFromExe {
+function Read-VersionInfoFromExe {
     param([Parameter(Mandatory)][string]$FilePath)
     $versionInfo = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($FilePath)
-    return $versionInfo.FileVersion
-}
-
-function Read-ProductVersionFromExe {
-    param([Parameter(Mandatory)][string]$FilePath)
-    $versionInfo = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($FilePath)
-    return $versionInfo.ProductVersion
+    return $versionInfo
 }
 
 $global:JuicerTempBase = Join-Path ([System.IO.Path]::GetTempPath()) "scoop-juicer-$(Get-Random)"
@@ -204,4 +198,14 @@ function Get-7zArchiveList {
 
     $output = & $7z l $Path 2>&1 | Out-String
     return $output
+}
+
+function Merge-State {
+    param(
+        [Parameter(Mandatory)][hashtable]$Data
+    )
+
+    foreach ($key in $Data.Keys) {
+        $State[$key] = $Data[$key]
+    }
 }
