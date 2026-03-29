@@ -135,9 +135,9 @@ function Save-GitChange {
 
     if (-not (Test-Path -Path Env:\CI)) { return }
 
-    $runNumber = $env:GITHUB_RUN_NUMBER
-    $message = if ($runNumber) {
-        "${ManifestName}: Update to version ${Version} [${runNumber}]"
+    $runId = $env:GITHUB_RUN_ID
+    $message = if ($runId) {
+        "${ManifestName}: Update to version ${Version} [${runId}]"
     } else {
         "${ManifestName}: Update to version ${Version}"
     }
