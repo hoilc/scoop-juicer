@@ -78,3 +78,19 @@ function Extract-VersionInfoFromRemoteFile {
 
     return $strippedInfo
 }
+
+function Extract-VersionFromRemoteZipFileList {
+    param(
+        [Parameter(Mandatory)][string]$Url,
+        [Parameter(Mandatory)][string]$Regex
+    )
+
+    $files = Get-RemoteZipFileList -Url $Url
+    $fileList = $files -join "`n"
+
+    if ($fileList -match $Regex) {
+        return $matches[1].Trim()
+    } else {
+        throw "Cannot find version matching '$Regex' in remote zip file list"
+    }
+}
