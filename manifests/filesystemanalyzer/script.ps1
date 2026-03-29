@@ -1,4 +1,6 @@
 $url = 'https://dmitrybrant.com/files/FileSystemAnalyzer.zip'
 
-$State.version = Extract-VersionFromRemoteFileProductVersion $url -ExtractFilePath 'FileSystemAnalyzer.exe'
+$info = Extract-VersionInfoFromRemoteFile $url -ExtractFilePath 'FileSystemAnalyzer.exe' -PreferVersionField "ProductVersion"
+Merge-State $info
+
 $State.compareMode = 'semver'
