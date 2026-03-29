@@ -1,0 +1,39 @@
+name: Check Versions
+on:
+  schedule:
+    - cron: '0 */12 * * *'
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Manifest names (comma-separated, leave blank for all)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    name: Check
+    runs-on: windows-latest
+    concurrency:
+      group: ${{ github.workflow }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run version checks
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          INPUT_NAME: ${{ github.event.inputs.name }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if ($env:INPUT_NAME) {
+            $names = $env:INPUT_NAME -split ',' | ForEach-Object { $_.Trim() }
+            .\core\index.ps1 -Name $names
+          } else {
+            .\core\index.ps1
+          }
