@@ -104,7 +104,7 @@ foreach ($dir in $manifestDirs) {
         'updated' {
             $saveData | ConvertTo-Json | Set-Content -Path $statePath -Encoding UTF8
             Write-Log "${oldVersion} -> ${newVersion} (updated)" -Prefix $manifestName
-            Save-GitChange -Path $statePath -ManifestName $manifestName -Version $newVersion
+            Save-GitChange -Path $statePath -ManifestName $manifestName -Version $newVersion -OldVersion $oldVersion
             $hasChanges = $true
         }
         'rollback' {

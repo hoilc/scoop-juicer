@@ -130,20 +130,22 @@ function Save-GitChange {
     param(
         [Parameter(Mandatory)][string]$Path,
         [Parameter(Mandatory)][string]$ManifestName,
-        [Parameter(Mandatory)][string]$Version
+        [Parameter(Mandatory)][string]$Version,
+        [string]$OldVersion
     )
 
     if (-not (Test-Path -Path Env:\CI)) { return }
 
     $runId = $env:GITHUB_RUN_ID
-    $message = if ($runId) {
-        "${ManifestName}: Update to version ${Version} [${runId}]"
+    $suffix = if ($runId) { " [${runId}]" } else { '' }
+    $message = if ($OldVersion) {
+        "manifest(${ManifestName}): ${OldVersion} -> ${Version}${suffix}"
     } else {
-        "${ManifestName}: Update to version ${Version}"
+        "manifest(${ManifestName}): init version ${Version}${suffix}"
     }
 
-    git add $Path
-    git commit -m $message
+    git add $Path 2>&1 | Out-Null
+    git commit -m $message 2>&1 | Out-Null
 }
 
 function Find-7zPath {
