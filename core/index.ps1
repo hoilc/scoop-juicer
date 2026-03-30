@@ -67,7 +67,7 @@ foreach ($dir in $manifestDirs) {
 
     $State = @{
         version      = $null
-        compareMode  = $null
+        compareMode  = 'semver'
     }
 
     try {

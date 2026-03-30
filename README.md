@@ -30,10 +30,10 @@ Each app has a folder under `manifests/` containing:
 
 ### compareMode
 
-| Mode | Behavior |
-|---|---|
-| _(not set)_ | Any string change is recorded |
-| `"semver"` | Only records when new version > old version (e.g. `1.2.3` > `1.2.2`) |
-| `"numeric"` | Only records when new number > old number |
+| Mode | Behavior                                                                       |
+|---|--------------------------------------------------------------------------------|
+| _(not set)_ | Any string change is recorded                                                  |
+| `"semver"` | (Default) Only records when new version > old version (e.g. `1.2.3` > `1.2.2`) |
+| `"numeric"` | Only records when new number > old number                                      |
 
 

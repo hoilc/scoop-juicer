@@ -95,26 +95,27 @@ function Compare-Version {
 
     switch ($CompareMode) {
         'semver' {
-            $parseSemver = {
-                param([string]$v)
-                if ($v -match '^v?(?<major>\d+)(\.(?<minor>\d+))?(\.(?<patch>\d+))?(\.(?<build>\d+))?') {
-                    return [version]::new(
-                        [int]$matches['major'],
-                        $(if ($matches['minor']) { [int]$matches['minor'] } else { 0 }),
-                        $(if ($matches['patch']) { [int]$matches['patch'] } else { 0 }),
-                        $(if ($matches['build']) { [int]$matches['build'] } else { 0 })
-                    )
+            try {
+                $oldSemver = [semver]$OldVersion
+                $newSemver = [semver]$NewVersion
+                if ($newSemver -gt $oldSemver) { return 'updated' }
+                if ($newSemver -lt $oldSemver) { return 'rollback' }
+                return 'unchanged'
+            } catch {
+                $fourPartRegex = '^v?(\d+)\.(\d+)\.(\d+)\.(\d+)$'
+                if ($OldVersion -match $fourPartRegex -and $NewVersion -match $fourPartRegex) {
+                    try {
+                        $oldVer = [version]$OldVersion
+                        $newVer = [version]$NewVersion
+                        if ($newVer -gt $oldVer) { return 'updated' }
+                        if ($newVer -lt $oldVer) { return 'rollback' }
+                        return 'unchanged'
+                    } catch {
+                        return 'updated'
+                    }
                 }
-                return $null
-            }
-            $old = & $parseSemver $OldVersion
-            $new = & $parseSemver $NewVersion
-            if ($null -eq $old -or $null -eq $new) {
                 return 'updated'
             }
-            if ($new -gt $old) { return 'updated' }
-            if ($new -lt $old) { return 'rollback' }
-            return 'unchanged'
         }
         'numeric' {
             $oldNum = 0; $newNum = 0
