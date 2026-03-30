@@ -1,6 +1,7 @@
 #Requires -Version 7.4
 
 . (Join-Path $PSScriptRoot 'remotezip.ps1')
+. (Join-Path $PSScriptRoot 'remotepe.ps1')
 
 $ErrorActionPreference = 'Stop'
 if (Test-Path -Path Env:\CI) { $ProgressPreference = 'SilentlyContinue' }

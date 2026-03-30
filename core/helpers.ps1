@@ -79,6 +79,38 @@ function Extract-VersionInfoFromRemoteFile {
     return $strippedInfo
 }
 
+function Extract-VersionInfoFromRemotePeFile {
+    param(
+        [Parameter(Mandatory)][string]$Url,
+        [ValidateSet("FileVersion", "ProductVersion")]
+        [string]$PreferVersionField = "FileVersion"
+    )
+
+    $info = Get-RemotePeVersion -Url $Url
+
+    $strippedInfo = @{ version = $null }
+    if ($info.FileVersion) {
+        $strippedInfo.fileVersion = $info.FileVersion.Trim()
+    }
+    if ($info.ProductVersion) {
+        $strippedInfo.productVersion = $info.ProductVersion.Trim()
+    }
+
+    $strippedInfo.version = if ($PreferVersionField -eq 'ProductVersion') {
+        if ($info.ProductVersion) { $info.ProductVersion } else { $info.FileVersion }
+    } else {
+        if ($info.FileVersion) { $info.FileVersion } else { $info.ProductVersion }
+    }
+
+    if (-not $strippedInfo.version) {
+        throw "Cannot extract version from '$filePath'"
+    } else {
+        $strippedInfo.version = $strippedInfo.version.Trim()
+    }
+
+    return $strippedInfo
+}
+
 function Extract-VersionFromRemoteZipFileList {
     param(
         [Parameter(Mandatory)][string]$Url,
