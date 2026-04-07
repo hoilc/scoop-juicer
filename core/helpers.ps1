@@ -126,3 +126,27 @@ function Extract-VersionFromRemoteZipFileList {
         throw "Cannot find version matching '$Regex' in remote zip file list"
     }
 }
+
+function Extract-VersionFromGitHubReleaseFeed {
+    param(
+        [Parameter(ParameterSetName = 'Url', Mandatory)][string]$Url,
+        [Parameter(ParameterSetName = 'Repo', Mandatory)][string]$Repo
+    )
+
+    if ($PSCmdlet.ParameterSetName -eq 'Repo') {
+        $Url = "https://github.com/$Repo/releases.atom"
+    }
+
+    $response = Invoke-WebRequest -Uri $Url
+    [xml]$xml = $response.Content
+    $entries = $xml.feed.entry
+    if (-not $entries) {
+        throw "No entries found in release feed"
+    }
+    $firstEntry = $entries[0]
+    $id = $firstEntry.id
+    if ($id -match '/[vV]?([^/]+)$') {
+        return $matches[1]
+    }
+    throw "Cannot extract version from feed entry id: $id"
+}
