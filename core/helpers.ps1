@@ -150,3 +150,24 @@ function Extract-VersionFromGitHubReleaseFeed {
     }
     throw "Cannot extract version from feed entry id: $id"
 }
+
+function Extract-VersionFromGitHubReleaseApi {
+    param(
+        [Parameter(Mandatory)][string]$Repo
+    )
+
+    $apiUrl = "https://api.github.com/repos/$Repo/releases/latest"
+    $headers = @{ Accept = 'application/vnd.github+json' }
+    $token = $env:GITHUB_TOKEN
+    if ($token) { $headers['Authorization'] = "Bearer $token" }
+
+    $response = Invoke-RestMethod -Uri $apiUrl -Headers $headers
+    $tagName = $response.tag_name
+    if (-not $tagName) {
+        throw "No tag_name found in latest release for $Repo"
+    }
+    if ($tagName -match '^[vV](.+)$') {
+        return $matches[1]
+    }
+    return $tagName
+}
