@@ -1,1 +1,1 @@
-$State.version = Extract-VersionFromGitHubReleaseFeed -Repo 'streamnative/pulsarctl'
+$State.version = Extract-VersionFromGitHubReleaseApi -Repo 'streamnative/pulsarctl'
