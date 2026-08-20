@@ -143,15 +143,19 @@ function Save-GitChange {
     if (-not (Test-Path -Path Env:\CI)) { return }
 
     $runId = $env:GITHUB_RUN_ID
-    $suffix = if ($runId) { " [${runId}]" } else { '' }
+    $runUrl = if ($runId) { "$($env:GITHUB_SERVER_URL)/$($env:GITHUB_REPOSITORY)/actions/runs/${runId}" } else { $null }
     $message = if ($OldVersion) {
-        "manifest(${ManifestName}): ${OldVersion} -> ${Version}${suffix}"
+        "manifest(${ManifestName}): ${OldVersion} -> ${Version}"
     } else {
-        "manifest(${ManifestName}): init version ${Version}${suffix}"
+        "manifest(${ManifestName}): init version ${Version}"
     }
 
     git add $Path 2>&1 | Out-Null
-    git commit -m $message 2>&1 | Out-Null
+    if ($runUrl) {
+        git commit -m $message -m "Triggered by ${runUrl}" 2>&1 | Out-Null
+    } else {
+        git commit -m $message 2>&1 | Out-Null
+    }
 }
 
 function Find-7zPath {
