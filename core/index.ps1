@@ -68,6 +68,7 @@ foreach ($dir in $manifestDirs) {
     $State = @{
         version      = $null
         compareMode  = 'semver'
+        ignore       = $null
     }
 
     try {
@@ -86,8 +87,14 @@ foreach ($dir in $manifestDirs) {
     $newVersion = $State.version
 
     $compareMode = if ($State.Contains('compareMode')) { $State.compareMode } else { $null }
+    $ignore = if ($State.Contains('ignore')) { $State.ignore } else { $null }
 
-    $StateExcludeKeys = @('compareMode')
+    if ($ignore -and $newVersion -match $ignore) {
+        Write-Log "${newVersion} (ignored)" -Level Warning -Prefix $manifestName
+        continue
+    }
+
+    $StateExcludeKeys = @('compareMode', 'ignore')
     $saveData = [ordered]@{}
     if ($State.Contains('version')) {
         $saveData['version'] = $State['version']
