@@ -86,15 +86,30 @@ function Remove-TempBase {
 
 function Compare-Version {
     param(
-        [string]$OldVersion,
-        [Parameter(Mandatory)][string]$NewVersion,
-        [string]$CompareMode
+        [Parameter(Mandatory)][hashtable]$OldState,
+        [Parameter(Mandatory)][hashtable]$NewState
     )
+
+    $OldVersion = $OldState.Contains('version') ? $OldState.version : $null
+    $NewVersion = $NewState.Contains('version') ? $NewState.version : $null
+    $CompareMode = $NewState.Contains('compareMode') ? $NewState.compareMode : $null
 
     if (-not $OldVersion) { return 'new' }
     if ($OldVersion -eq $NewVersion) { return 'unchanged' }
 
     switch ($CompareMode) {
+        'githubActions' {
+            $oldRunId = $OldState.Contains('runId') ? $OldState.runId : $null
+            $newRunId = $NewState.Contains('runId') ? $NewState.runId : $null
+            [long]$oldId = 0
+            [long]$newId = 0
+            [long]::TryParse($oldRunId, [ref]$oldId) | Out-Null
+            [long]::TryParse($newRunId, [ref]$newId) | Out-Null
+            if ($oldId -eq 0 -or $newId -eq 0) { return 'updated' }
+            if ($newId -gt $oldId) { return 'updated' }
+            if ($newId -lt $oldId) { return 'rollback' }
+            return 'unchanged'
+        }
         'semver' {
             try {
                 $oldSemver = [semver]$OldVersion

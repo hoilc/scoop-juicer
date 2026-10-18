@@ -86,7 +86,6 @@ foreach ($dir in $manifestDirs) {
     $oldVersion = if ($PreviousState.Contains('version')) { $PreviousState.version } else { $null }
     $newVersion = $State.version
 
-    $compareMode = if ($State.Contains('compareMode')) { $State.compareMode } else { $null }
     $ignore = if ($State.Contains('ignore')) { $State.ignore } else { $null }
 
     if ($ignore -and $newVersion -match $ignore) {
@@ -105,7 +104,7 @@ foreach ($dir in $manifestDirs) {
         }
     }
 
-    $result = Compare-Version -OldVersion $oldVersion -NewVersion $newVersion -CompareMode $compareMode
+    $result = Compare-Version -OldState $PreviousState -NewState $State
 
     switch ($result) {
         'new' {

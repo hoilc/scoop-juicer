@@ -171,3 +171,85 @@ function Extract-VersionFromGitHubReleaseApi {
     }
     return $tagName
 }
+
+function Extract-VersionFromGitHubActions {
+    <#
+    .SYNOPSIS
+      Builds a version string from the latest GitHub Actions workflow run (pull request runs are excluded).
+    .PARAMETER Repo
+      Repository in 'owner/name' form.
+    .PARAMETER Workflow
+      Workflow file name (e.g. 'build.yml') or id.
+    .PARAMETER Branch
+      Only consider runs on this branch.
+    .PARAMETER Status
+      Run status/conclusion filter, defaults to 'success'. Use 'completed' to accept any
+      finished run regardless of conclusion (e.g. when an unrelated failing job marks the
+      whole run as failed). Pass '' to disable filtering.
+    .PARAMETER Event
+      Only consider runs triggered by this event (e.g. 'push', 'schedule', 'workflow_dispatch').
+    .PARAMETER Format
+      Version template, defaults to 'b{runNumber}-{date}-{shortsha}' (e.g. 'b335-20261011-0c7be69').
+      Placeholders: {date}, {time}, {sha}, {shortsha}, {runId}, {runNumber}.
+      {date} and {time} accept a custom .NET format, e.g. '{date:yyyy-MM-dd}'.
+      Date and time refer to the run creation time in UTC.
+    .NOTES
+      The returned hashtable includes compareMode 'githubActions', so after Merge-State an
+      older workflow run is treated as a rollback and skipped. Set $State.compareMode
+      afterwards to override.
+    .EXAMPLE
+      Extract-VersionFromGitHubActions -Repo 'owner/repo' -Workflow 'build.yml' -Branch 'main'
+    #>
+    param(
+        [Parameter(Mandatory)][string]$Repo,
+        [Parameter(Mandatory)][string]$Workflow,
+        [string]$Branch,
+        [AllowEmptyString()]
+        [ValidateSet('', 'completed', 'action_required', 'cancelled', 'failure', 'neutral', 'skipped', 'stale', 'success', 'timed_out', 'in_progress', 'queued', 'requested', 'waiting', 'pending')]
+        [string]$Status = 'success',
+        [string]$Event,
+        [string]$Format = 'b{runNumber}-{date}-{shortsha}',
+        [int]$ShortShaLength = 7
+    )
+
+    $apiUrl = "https://api.github.com/repos/$Repo/actions/workflows/$Workflow/runs"
+
+    $query = [ordered]@{ per_page = 1; exclude_pull_requests = 'true' }
+    if ($Branch) { $query.branch = $Branch }
+    if ($Status) { $query.status = $Status }
+    if ($Event) { $query.event = $Event }
+
+    $queryString = ($query.GetEnumerator() | ForEach-Object { '{0}={1}' -f $_.Key, [uri]::EscapeDataString("$($_.Value)") }) -join '&'
+    $response = Invoke-GitHubApi -Uri "${apiUrl}?${queryString}"
+
+    $run = $response.workflow_runs | Select-Object -First 1
+    if (-not $run) {
+        throw "No matching workflow runs found for '$Repo'"
+    }
+
+    $builtAt = [DateTimeOffset]::Parse($run.created_at).UtcDateTime
+    $sha = $run.head_sha
+    $shortSha = $sha.Substring(0, [Math]::Min($ShortShaLength, $sha.Length))
+
+    $version = [regex]::Replace($Format, '\{(date|time|sha|shortsha|runId|runNumber)(?::([^}]+))?\}', {
+        param($m)
+        $custom = if ($m.Groups[2].Success) { $m.Groups[2].Value } else { $null }
+        switch ($m.Groups[1].Value) {
+            'date'      { $builtAt.ToString(($custom ? $custom : 'yyyyMMdd'), [cultureinfo]::InvariantCulture) }
+            'time'      { $builtAt.ToString(($custom ? $custom : 'HHmmss'), [cultureinfo]::InvariantCulture) }
+            'sha'       { $sha }
+            'shortsha'  { $shortSha }
+            'runId'     { [string]$run.id }
+            'runNumber' { [string]$run.run_number }
+        }
+    })
+
+    return @{
+        version     = $version
+        compareMode = 'githubActions'
+        commit      = $sha
+        runId       = [string]$run.id
+        runNumber   = [string]$run.run_number
+        builtAt     = $builtAt.ToString('yyyy-MM-ddTHH:mm:ssZ', [cultureinfo]::InvariantCulture)
+    }
+}
